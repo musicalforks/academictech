@@ -1,35 +1,49 @@
+<!--Program including HTML, CSS, Javascript to display data-driven graph visualization from Omeka API data-->
 <!DOCTYPE html>
 <meta charset="utf-8">
-<style>
+<head><link href="https://fonts.googleapis.com/css?family=Pangolin" rel="stylesheet"></head>
 
+
+<!--Beginning of CSS stylesheet-->
+<style>
+	
 .link {
-  stroke: #ccc;
+	stroke: #000;
 }
+	
+body {
+	font-family: 'Pangolin', cursive;
+    font-size: 15px;
+      }
 
 .node text {
   pointer-events: none;
-  font: 10px sans-serif;
+  font: 10px 'Pangolin';
 }
 	
 .themes {}
 .orgs {}
 
 </style>
+
+<!--Beginning of body and JavaScript/D3 program-->
 <body>
 <script src="https://d3js.org/d3.v3.js"></script>
 <script>
 
-var width = 1200,
-    height = 650
+//Initialize svg with gray background and physics model for visualization	
+var width = window.innerWidth - 20;
+    height = window.innerHeight - 25;
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-svg.append("image")
-      .attr("xlink:href", "http://www.kinyu-z.net/data/wallpapers/219/1471496.jpg")
+svg.append("rect")
+      //.attr("xlink:href", "https://www.beautycolorcode.com/cdcdcd.png")
       .attr("x", 0)
       .attr("y", 0)
+	  .attr("fill", "#ccc")
       .attr("width", width)
       .attr("height", height);
 
@@ -39,62 +53,82 @@ var force = d3.layout.force()
     .charge(-300)
     .size([width, height]);
 
+//Stores dicts representing themes and orgs to display as nodes	
+var nodes = [];
+//Stores links between themes and orgs
+var links = [];
+//Stores names of themes
+var themeList = [];
+var numThemes = 0;
 	
-var nodes = [{"id": 0, "name": "ecofeminism", "level": "0", "theme": "ecofeminism"/*, "x": "50", "y": "100"*/},
-    {"id": 1, "name": "ecological education", "level": "0", "theme": "ecological education"},
-    {"id": 2, "name": "urban planning", "level": "0", "theme": "urban planning"},
-    {"id": 3, "name": "human rights", "level": "0", "theme": "human rights"},
-    {"id": 4, "name": "new media", "level": "0", "theme": "new media"},
-    {"id": 5, "name": "migration", "level": "0", "theme": "migration"},
-    {"id": 6, "name": "group 1-edu", "level": "1", "logo": "https://github.com/favicon.ico", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1","theme": "ecological education"},
-    {"id": 7, "name": "group 2-urb", "level": "1", "logo": "http://diylogodesigns.com/blog/wp-content/uploads/2016/06/Nasa-Logo-Transparent-Background-download.png", "url": "http://nasa.gov", "theme": "urban planning"},
-    {"id": 8, "name": "group 3-fem", "level": "1", "logo": "https://github.com/favicon.ico", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "ecofeminism"},
-    {"id": 9, "name": "group 4-med-fem", "level": "1", "logo": "http://www.masonbruce.com/wp-content/uploads/2015/03/android-logo-transparent-background.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "new media", "theme1": "ecofeminism"},
-    {"id": 10, "name": "group 5-hum-urb", "level": "1", "logo": "http://neatline.celestesharpe.com/files/original/f577b044a94e7172500374a6c37915bb.jpg", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "human rights", "theme1": "urban planning"},
-    {"id": 11, "name": "group 6-med", "level": "1", "logo": "http://assets.stickpng.com/thumbs/580b57fcd9996e24bc43c537.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "new media"},
-    {"id": 12, "name": "group 7-urb", "level": "1", "logo": "https://arcticportal.org/images/Logos/Arctic%20Portal/AP.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "urban planning"},
-    {"id": 13, "name": "group 8-edu-hum", "level": "1", "logo": "https://www.printful.com/static/images/layout/printful-logo.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "ecological education", "theme1": "human rights"},
-    {"id": 14, "name": "group 9-edu", "level": "1", "logo": "http://www.pngpix.com/wp-content/uploads/2016/07/PNGPIX-COM-Pepsi-Logo-PNG-Transparent-500x667.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "ecological education"},
-    {"id": 15, "name": "group 10-fem-edu", "level": "1", "logo": "http://www.pngpix.com/wp-content/uploads/2016/07/PNGPIX-COM-Pepsi-Logo-PNG-Transparent-500x667.png", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "ecofeminism", "theme1": "ecological education"},
-    {"id": 16, "name": "group 11-mig-fem", "level": "1", "logo": "http://neatline.celestesharpe.com/files/original/f577b044a94e7172500374a6c37915bb.jpg", "url": "http://neatline.celestesharpe.com/exhibits/show/social-justice-group--1", "theme": "migration", "theme1": "ecofeminism"}]
-
-var links = [{"source": 6, "target": 1, "value": 1},
-    {"source": 7, "target": 2, "value": 1},
-    {"source": 8, "target": 0, "value": 1},
-    {"source": 9, "target": 4, "value": 1},
-	{"source": 9, "target": 0, "value": 1},
-    {"source": 10, "target": 3, "value": 1},
-	{"source": 10, "target": 2, "value": 1},
-    {"source": 11, "target": 4, "value": 1},
-    {"source": 12, "target": 2, "value": 1},
-    {"source": 13, "target": 1, "value": 1},
-	{"source": 13, "target": 3, "value": 1},
-    {"source": 14, "target": 1, "value": 1},
-    {"source": 15, "target": 0, "value": 1},
-	{"source": 15, "target": 1, "value": 1},
-    {"source": 16, "target": 5, "value": 1},
-	{"source": 16, "target": 0, "value": 1}
-	]
-//d3.json("graph.json", function(error, json) {
-  //if (error) throw error;
-
-  force
+/*Complete API requests, format resulting JSON to usable data, and visualize the data*/
+	
+//Send API requests for theme data (GET all tags) and format resulting JSON
+d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data1) {
+	//Send API requests for org data (GET all items of Organization Item type) and format resulting JSON
+	d3.json("http://neatline.celestesharpe.com/api/items/?item_type=18", function(data2){
+     
+	  /*Formatting API JSON returns to correct data format*/
+	  //Get themes (GET all tags) and put into list
+	  for (var i = 0; i < data1.length; i++){
+		var tag = data1[i].name;	
+		themeList.push(tag);
+	  }
+	  numThemes = data1.length;
+	  //Create dict for each theme and add to nodes
+	  for (var i = 0; i < themeList.length; i++){	
+		var themeDict = {};
+		themeDict = {"id": i, "name": themeList[i], "level": "0", "themes": [themeList[i]]};
+		nodes.push(themeDict);
+	  } 
+		
+		
+	  //GET all items of Organization Item Type, and create dict for each org and add to nodes
+	  for (var j = 0; j < data2.length; j++){
+		  var name = data2[j].element_texts[0].text;
+		  var url = data2[j].element_texts[1].text;
+		  var logo = data2[j].element_texts[2].text;
+		  var themes = [];
+		  //For loop to add themes key as a list of themes (tags related to org)
+		  //And to add links between themes and org by id
+		  for (var k = 0; k < data2[j].tags.length; k++){
+			  themes.push(data2[j].tags[k].name);
+			  //Find the theme id
+			  var l = 0;
+			  while(data2[j].tags[k].name != themeList[l]){
+				  l++
+			  }
+			  var link = {"source": j+numThemes, "target": l, "value": 1}
+			  links.push(link);
+		  }
+		  var orgDict = {};
+		  orgDict = {"id": j+numThemes, "name": name, "level": "1", "logo": logo, "url": url, "themes": themes};
+		  nodes.push(orgDict);
+	  }
+		
+		
+	   /*Begin displaying data stored by nodes and links in visualization*/
+	   force
       .nodes(nodes)
       .links(links)
       .start();
-	
+
+  //Display links using links list		
   var link = svg.selectAll(".link")
       .data(links)
     .enter().append("line")
       .attr("class", "link");
-
+  
+  //Select and class nodes using nodes list
   var node = svg.selectAll(".node")
       .data(nodes)
       .enter().append("g")
       .attr("class", "node")
+      //Class nodes by theme/org class type
   	  .attr("class", isThemeOrOrg)
       .call(force.drag);
 	
+	//Display theme nodes as circle colored by theme color and captioned by theme name
   	var themes = svg.selectAll(".themes")
 	  themes.append("circle")
       .attr("r", 50)
@@ -103,6 +137,7 @@ var links = [{"source": 6, "target": 1, "value": 1},
       .text(function(d) { return d.name })
 	  .attr("text-anchor", "middle");
 
+	//Display org nodes as logo image with hyperlink to org's Collection page
   	var orgs = svg.selectAll(".orgs")
 	  orgs.append("image")
       .attr("xlink:href", function(d){return d.logo})
@@ -119,7 +154,7 @@ var links = [{"source": 6, "target": 1, "value": 1},
       .attr("height", 30)
 	  .style("fill-opacity", .0000000000001);
 
-	
+/*Function to determine if node is theme or org*/	
 function isThemeOrOrg(d){
 	if (d.level == "0"){
 		return "themes"
@@ -128,33 +163,34 @@ function isThemeOrOrg(d){
 	}
 }	
 	
-//Function to choose what color circle we have
-//Green: ecological education, blue: human rights, purple: urban planning, red: ecofeminism
-//yellow: new media, orange
+/*Function to determine theme node's color
+  Green: ecological education, blue: human rights, purple: urban planning, red: ecofeminism
+  yellow: new media, orange*/
 function circleColour(d){
-	if(d.theme =="ecological education"){
+	console.log(d);
+	if(d.themes[0] =="ecological education"){
 		return d3.rgb(179, 232, 156);
-	} else if (d.theme =="human rights"){
+	} else if (d.themes[0] =="human rights"){
 		return d3.rgb(118, 202, 228);
-	} else if (d.theme =="urban planning"){
+	} else if (d.themes[0] =="urban planning"){
 		return d3.rgb(154, 126, 191);
-	} else if (d.theme =="ecofeminism"){
+	} else if (d.themes[0] =="ecofeminism"){
 		return d3.rgb(255, 153, 153);
-	} else if (d.theme =="new media"){
+	} else if (d.themes[0] =="new media"){
 		return d3.rgb(255, 255, 153);
-	} else if (d.theme =="migration"){
+	} else if (d.themes[0] =="migration"){
 		return d3.rgb(255, 178, 102);
 	}
 }	
-	
+  //Complete drawing all items on svg
   force.on("tick", function() {
     link.attr("x1", function(d) { return d.source.x; })
         .attr("y1", function(d) { return d.source.y; })
         .attr("x2", function(d) { return d.target.x; })
         .attr("y2", function(d) { return d.target.y; });
-
+    //Visualization is responsive to user input (dragging nodes)
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
   });
-//});
-
+	});
+});
 </script>
