@@ -23,6 +23,7 @@ body {
 	
 .themes {}
 .orgs {}
+.center {}
 
 </style>
 
@@ -48,9 +49,9 @@ svg.append("rect")
       .attr("height", height);
 
 var force = d3.layout.force()
-    .gravity(0.04)
-    .distance(100)
-    .charge(-300)
+    .gravity(0.01)
+    .distance(140)
+    .charge(-900)
     .size([width, height]);
 
 //Stores dicts representing themes and orgs to display as nodes	
@@ -67,6 +68,7 @@ var numThemes = 0;
 d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data1) {
 	//Send API requests for org data (GET all items of Organization Item type) and format resulting JSON
 	d3.json("http://neatline.celestesharpe.com/api/items/?item_type=18", function(data2){
+		d3.json("http://neatline.celestesharpe.com/api/items/?item_type=19", function(data3){
      
 	  /*Formatting API JSON returns to correct data format*/
 	  //Get themes (GET all tags) and put into list
@@ -80,9 +82,9 @@ d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data
 		var themeDict = {};
 		themeDict = {"id": i, "name": themeList[i], "level": "0", "themes": [themeList[i]]};
 		nodes.push(themeDict);
-	  } 
-		
-		
+	  }
+			  
+			  
 	  //GET all items of Organization Item Type, and create dict for each org and add to nodes
 	  for (var j = 0; j < data2.length; j++){
 		  var name = data2[j].element_texts[0].text;
@@ -105,8 +107,29 @@ d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data
 		  orgDict = {"id": j+numThemes, "name": name, "level": "1", "logo": logo, "url": url, "themes": themes};
 		  nodes.push(orgDict);
 	  }
+	  var oldj = j;	
 		
+	  //Add proj title node
+	  for (var j = 0; j < data3.length; j++){
+		  var name = data3[j].element_texts[1].text;
+		  var url = data3[j].element_texts[0].text;
+		  var themes = [];
+		  for (var k = 0; k < data3[j].tags.length; k++){
+			  themes.push(data3[j].tags[k].name);
+			  //Find the theme id
+			  var l = 0;
+			  while(data3[j].tags[k].name != themeList[l]){
+				  l++
+			  }
+			  var link = {"source": oldj+numThemes, "target": l, "value": 1}
+			  links.push(link);
+		  }
+	  }
+	  var orgDict = {};
+	  orgDict = {"id": oldj+numThemes, "name": name, "level": "2", "url": url, "themes": themes};
+	  nodes.push(orgDict);  
 		
+			  
 	   /*Begin displaying data stored by nodes and links in visualization*/
 	   force
       .nodes(nodes)
@@ -131,7 +154,7 @@ d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data
 	//Display theme nodes as circle colored by theme color and captioned by theme name
   	var themes = svg.selectAll(".themes")
 	  themes.append("circle")
-      .attr("r", 50)
+      .attr("r", 40)
       .attr("fill", circleColour)
 	  themes.append("text")
       .text(function(d) { return d.name })
@@ -153,15 +176,29 @@ d3.json("http://neatline.celestesharpe.com/api/tags?pretty_print", function(data
       .attr("width", 30) //2*4.5)
       .attr("height", 30)
 	  .style("fill-opacity", .0000000000001);
+			  
+	//Display center node
+  	var center = svg.selectAll(".center")
+	  .append("a")
+      .attr("xlink:href", function(d){return d.url})
+	  center.append("circle")
+      .attr("r", 55)
+      .attr("fill", "#aaa")
+	  center.append("text")
+      .text(function(d) { return d.name })
+	  .attr("text-anchor", "middle");
 
+			  
 /*Function to determine if node is theme or org*/	
 function isThemeOrOrg(d){
 	if (d.level == "0"){
-		return "themes"
+		return "themes";
+	}else if (d.level == "1"){
+		return "orgs";
 	}else{
-		return "orgs"
+		return "center";
 	}
-}	
+}
 	
 /*Function to determine theme node's color
   Green: ecological education, blue: human rights, purple: urban planning, red: ecofeminism
@@ -191,6 +228,8 @@ function circleColour(d){
     //Visualization is responsive to user input (dragging nodes)
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
   });
+	
 	});
+});
 });
 </script>
