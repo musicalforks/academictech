@@ -26,8 +26,8 @@ body {
 <!--Beginning of JavaScript/D3 program-->
 
 <script src="https://d3js.org/d3.v3.js"></script>
-<body>
-<script>	
+<script>
+
 //Initialize svg with gray background and physics model for visualization	
 var width = window.innerWidth - 20;
     height = window.innerHeight - 25;
@@ -138,7 +138,7 @@ d3.json("https://constellation.carletonds.com/api/tags?pretty_print", function(d
     .enter().append("line")
       .attr("class", "link")
   	  .attr("stroke-width", linkWeight)
- 	  .attr("stroke", linkColorGradient);
+ 	  .attr("stroke", linkColor);
   
   //Select and class nodes using nodes list
   var node = svg.selectAll(".node")
@@ -198,6 +198,7 @@ d3.json("https://constellation.carletonds.com/api/tags?pretty_print", function(d
         .attr("y2", function(d) { return d.target.y; });
     //Visualization is responsive to user input (dragging nodes)
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+	//Force center node to center
 	nodes[nodes.length-1].x = width / 2;
     nodes[nodes.length-1].y = height / 2;
   });
@@ -246,74 +247,31 @@ function circleColor(d){
 	return d3.rgb(themeColorKey[theme][0], themeColorKey[theme][1],themeColorKey[theme][2]);
 }
 
-/*Create gradient obj to determine color gradient for each link*/
-function linkColorGradient(d){
-	var defs = svg.append("defs");
-
-	var gradient = defs.append("linearGradient")
-	   .attr("id", "svgGradient" + d.source.name.toString().replace(/\s/g, '') + d.target.name.toString().replace(/\s/g, ''))
-	   .attr("x1", "0%")
-	   .attr("x2", "100%")
-	   .attr("y1", "0%")
-	   .attr("y2", "100%");
-var ok = linkColorSource(d);
-	gradient.append("stop")
-	   .attr('class', 'start')
-	   .attr("offset", "0%")
-	   .attr("stop-color", ok)
-	   .attr("stop-opacity", 1);
-var ok2 = linkColorTarget(d);
-	gradient.append("stop")
-	   .attr('class', 'end')
-	   .attr("offset", "100%")
-	   .attr("stop-color", ok2)
-	   .attr("stop-opacity", 1);
+/*Helper function to determine link color by averaging the colors of related themes*/
+function linkColor(d){
+	var themeList = d.source.themes.concat(d.target.themes);
+	themeList = themeList.unique();
 	
-	return "url(#svgGradient" + d.source.name.toString().replace(/\s/g, '') + d.target.name.toString().replace(/\s/g, '') + ")";
-}	
-
-/*Determine first color for link color gradient*/
-function linkColorSource(d){
-	if(d.type == "theme-center"){
+	var r, g, b;
+	r = themeColorKey[themeList[0]][0]
+	g = themeColorKey[themeList[0]][1]
+	b = themeColorKey[themeList[0]][2]
+	for(var theme=1; theme < themeList.length; theme++){
+		r = avgRgb(r, themeColorKey[themeList[theme]][0], 1)
+		g = avgRgb(r, themeColorKey[themeList[theme]][1], 1)
+		b = avgRgb(r, themeColorKey[themeList[theme]][2], 1)
+	}
+	//Weight the theme at 1.75 when avging for org-theme link
+	if(d.type == "org-theme"){
 		var theme = d.target.themes[0];
+		r = avgRgb(r, themeColorKey[theme][0], 1.75);
+		g = avgRgb(g, themeColorKey[theme][1], 1.75);
+		b = avgRgb(b, themeColorKey[theme][2], 1.75);
 	}
-	else{
-		var theme = d.source.themes[0];
-	}
-	return d3.rgb(themeColorKey[theme][0],themeColorKey[theme][1],themeColorKey[theme][2]);
-}
-	
-/*Determine second color for link color gradient*/
-function linkColorTarget(d){
-	
-	if(d.type == "theme-center"){
-		var theme = d.target.themes[0];
-		return d3.rgb(themeColorKey[theme][0],themeColorKey[theme][1],themeColorKey[theme][2]);
-	}
-	//avg rgb color for all tagged themes of a org node
-	else{
-		var themeList = d.target.themes;
-
-		var r, g, b;
-		r = themeColorKey[themeList[0]][0];
-		g = themeColorKey[themeList[0]][1];
-		b = themeColorKey[themeList[0]][2];
-		for(var theme=1; theme < themeList.length; theme++){
-			r = avgRgb(r, themeColorKey[themeList[theme]][0], 1);
-			g = avgRgb(r, themeColorKey[themeList[theme]][1], 1);
-			b = avgRgb(r, themeColorKey[themeList[theme]][2], 1);
-		}
-		return d3.rgb(r, g, b);
-	}
+	return d3.rgb(r, g, b);
+	//gray: d3.rgb(169,169,169);
 }	
 	
-/*Avg two r/g/b values by first squaring them, then avergaging the squared values,
-(here the first value can be weighted), and then finally taking the square root of that average*/
-function avgRgb(rgb1, rgb2, weight){
-	var rgb1Sq = Math.pow(rgb1, 2)
-	var rgb2Sq = Math.pow(rgb2, 2)
-	return Math.sqrt(((weight * rgb1Sq) + rgb2Sq)/2);	
-}
 /*Determines stroke weight of a link*/
 function linkWeight(d){
 	if(d.type == "org-theme"){
@@ -321,6 +279,14 @@ function linkWeight(d){
 	}else if(d.type == "theme-center"){
 		return 7;
 	}
+}
+
+/*Avg two r/g/b values by first squaring them, then avergaging the squared values,
+(here the first value can be weighted), and then finally taking the square root of that average*/
+function avgRgb(rgb1, rgb2, weight){
+	var rgb1Sq = Math.pow(rgb1, 2)
+	var rgb2Sq = Math.pow(rgb2, 2)
+	return Math.sqrt(((weight * rgb1Sq) + rgb2Sq)/2);	
 }
 
 /*Series of helper functions to position and size logo images depending on logo orientation*/	
@@ -393,5 +359,6 @@ Array.prototype.unique = function() {
 
     return a;
 };
-
+	
 </script>
+

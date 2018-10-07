@@ -26,7 +26,7 @@ body {
 <!--Beginning of JavaScript/D3 program-->
 
 <script src="https://d3js.org/d3.v3.js"></script>
-<body>
+
 <script>	
 //Initialize svg with gray background and physics model for visualization	
 var width = window.innerWidth - 20;
@@ -198,6 +198,7 @@ d3.json("https://constellation.carletonds.com/api/tags?pretty_print", function(d
         .attr("y2", function(d) { return d.target.y; });
     //Visualization is responsive to user input (dragging nodes)
     node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+	//Force center node to center
 	nodes[nodes.length-1].x = width / 2;
     nodes[nodes.length-1].y = height / 2;
   });
@@ -256,17 +257,17 @@ function linkColorGradient(d){
 	   .attr("x2", "100%")
 	   .attr("y1", "0%")
 	   .attr("y2", "100%");
-var ok = linkColorSource(d);
+var color1 = linkColorSource(d);
 	gradient.append("stop")
 	   .attr('class', 'start')
 	   .attr("offset", "0%")
-	   .attr("stop-color", ok)
+	   .attr("stop-color", color1)
 	   .attr("stop-opacity", 1);
-var ok2 = linkColorTarget(d);
+var color2 = linkColorTarget(d);
 	gradient.append("stop")
 	   .attr('class', 'end')
 	   .attr("offset", "100%")
-	   .attr("stop-color", ok2)
+	   .attr("stop-color", color2)
 	   .attr("stop-opacity", 1);
 	
 	return "url(#svgGradient" + d.source.name.toString().replace(/\s/g, '') + d.target.name.toString().replace(/\s/g, '') + ")";
