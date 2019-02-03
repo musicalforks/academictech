@@ -1,0 +1,33 @@
+body {
+	font-family: "Hind", sans-serif;
+    font-size: 15px;
+      }
+
+.node text {
+  pointer-events: none;
+  font: 10px 'Avro';
+}
+
+.square {
+	x: -40;
+	y: -40;
+	width: 10;
+	height: 10;
+}
+
+.rectangular {
+	width: 10;
+	height: 20;
+}
+
+.background {
+	fill: rgb(105,105,105);
+}
+.themes {}
+.orgs {}
+.center {}
+
+.to-front {
+	position: relative;
+	z-index: 100;
+}
